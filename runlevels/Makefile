@@ -1,8 +1,7 @@
 include ../mk/net.mk
 
-BOOT=		bootmisc fsck hostname localmount loopback \
-		root swap swapfiles sysctl urandom ${BOOT-${OS}}
-DEFAULT=	local netmount
+BOOT=		bootmisc fsck hostname localmount ${BOOT-${OS}}
+DEFAULT=	local ${DEFAULT-${OS}}
 SHUTDOWN=	savecache ${SHUTDOWN-${OS}}
 SYSINIT=	${SYSINIT-${OS}}
 
@@ -12,15 +11,25 @@ BOOTDIR=	${LEVELDIR}/boot
 DEFAULTDIR=	${LEVELDIR}/default
 SHUTDOWNDIR=	${LEVELDIR}/shutdown
 
+MK=		../mk
+include ${MK}/os.mk
+
 ifeq (${MKNET},yes)
 BOOT+= network staticroute
 endif
 
+BOOT-extra=	loopback root swap swapfiles sysctl urandom
+DEFAULT-extra=	netmount
+
+BOOT-${OS}=	${BOOT-extra}
+DEFAULT-${OS}=	${DEFAULT-extra}
+
+BOOT-Minix=
+DEFAULT-Minix=
+
 INITFILES=	../init.d
 
-MK=		../mk
 include ${MK}/sys.mk
-include ${MK}/os.mk
 include ${MK}/gitignore.mk
 
 BOOT-${OS}=
@@ -37,6 +46,8 @@ BOOT-FreeBSD+=	adjkerntz dumpon syscons
 BOOT-Linux+=	hwclock keymaps modules mtab procfs termencoding tmpfiles.setup
 SHUTDOWN-Linux=	killprocs mount-ro
 SYSINIT-Linux=	devfs dmesg sysfs tmpfiles.dev
+
+BOOT-Minix=	osclock syslogd
 
 # Generic BSD stuff
 BOOT-NetBSD+=	hostid newsyslog savecore syslogd

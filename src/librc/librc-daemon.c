@@ -194,6 +194,126 @@ rc_find_pids(const char *exec, const char *const *argv, uid_t uid, pid_t pid)
 }
 librc_hidden_def(rc_find_pids)
 
+#elif defined(__minix)
+
+static bool
+pid_is_exec(pid_t pid, const char *exec)
+{
+	char buffer[32];
+	FILE *fp;
+	int c;
+	int i = 0;
+	bool retval = false;
+
+	exec = basename_c(exec);
+	snprintf(buffer, sizeof(buffer), "/proc/%d/psinfo", pid);
+	if ((fp = fopen(buffer, "r"))) {
+		while (i < 3 && (c = getc(fp)) != EOF)
+			if (c == ' ') i++;
+		while ((c = getc(fp)) != EOF && c == *exec)
+			exec++;
+		if (c == ' ' && *exec == '\0')
+			retval = true;
+		fclose(fp);
+	}
+	return retval;
+}
+
+static bool
+pid_is_argv(pid_t pid, const char *const *argv)
+{
+	char cmdline[32];
+	int fd;
+	char buffer[PATH_MAX];
+	char *p;
+	ssize_t bytes;
+
+	snprintf(cmdline, sizeof(cmdline), "/proc/%u/cmdline", pid);
+	if ((fd = open(cmdline, O_RDONLY)) < 0)
+		return false;
+	bytes = read(fd, buffer, sizeof(buffer));
+	close(fd);
+	if (bytes == -1)
+		return false;
+
+	buffer[bytes] = '\0';
+	p = buffer;
+	while (*argv) {
+		if (strcmp(*argv, p) != 0)
+			return false;
+		argv++;
+		p += strlen(p) + 1;
+		if ((unsigned)(p - buffer) > sizeof(buffer))
+			return false;
+	}
+	return true;
+}
+
+RC_PIDLIST *
+rc_find_pids(const char *exec, const char *const *argv, uid_t uid, pid_t pid)
+{
+	DIR *procdir;
+	struct dirent *entry;
+	char *line = NULL;
+	pid_t p;
+	char buffer[PATH_MAX];
+	struct stat sb;
+	pid_t runscript_pid = 0;
+	char *pp;
+	RC_PIDLIST *pids = NULL;
+	RC_PID *pi;
+
+	if ((procdir = opendir("/proc")) == NULL)
+		return NULL;
+
+	/*
+	  We never match RC_RUNSCRIPT_PID if present so we avoid the below
+	  scenario
+
+	  /etc/init.d/ntpd stop does
+	  start-stop-daemon --stop --name ntpd
+	  catching /etc/init.d/ntpd stop
+
+	  nasty
+	*/
+
+	if ((pp = getenv("RC_RUNSCRIPT_PID"))) {
+		if (sscanf(pp, "%d", &runscript_pid) != 1)
+			runscript_pid = 0;
+	}
+
+	while ((entry = readdir(procdir)) != NULL) {
+		if (sscanf(entry->d_name, "%d", &p) != 1)
+			continue;
+		if (runscript_pid != 0 && runscript_pid == p)
+			continue;
+		if (pid != 0 && pid != p)
+			continue;
+		if (uid) {
+			snprintf(buffer, sizeof(buffer), "/proc/%d", p);
+			if (stat(buffer, &sb) != 0 || sb.st_uid != uid)
+				continue;
+		}
+		if (exec && !pid_is_exec(p, exec))
+			continue;
+		if (argv &&
+		    !pid_is_argv(p, (const char *const *)argv))
+			continue;
+		if (!pids) {
+			pids = xmalloc(sizeof(*pids));
+			LIST_INIT(pids);
+		}
+		pi = xmalloc(sizeof(*pi));
+		pi->pid = p;
+		LIST_INSERT_HEAD(pids, pi, entries);
+	}
+	if (line != NULL)
+		free(line);
+	closedir(procdir);
+	return pids;
+}
+librc_hidden_def(rc_find_pids)
+
 #elif BSD
 
 # if defined(__NetBSD__) || defined(__OpenBSD__)

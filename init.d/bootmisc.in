@@ -183,7 +183,7 @@ start()
 	if checkpath -W /var/run; then
 		ebegin "Creating user login records"
 		local xtra=
-		[ "$RC_UNAME" = NetBSD ] && xtra=x
+		[ "$RC_UNAME" = Minix ] || [ "$RC_UNAME" = NetBSD ] && xtra=x
 		for x in "" $xtra; do
 			mkutmp /var/run/utmp$x
 		done

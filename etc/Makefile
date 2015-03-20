@@ -16,6 +16,10 @@ SED_EXTRA-Linux=	-e 's:@TERM@:wsvt25:g'
 BIN-Linux=
 CONF-Linux=
 
+SED_EXTRA-Minix=	-e 's:@TERM@:minix:g'
+BIN-Minix=		rc rc.shutdown
+CONF-Minix=
+
 SED_EXTRA-NetBSD=	-e 's:@TERM@:wsvt25:g'
 BIN-NetBSD=		rc rc.shutdown
 CONF-NetBSD=

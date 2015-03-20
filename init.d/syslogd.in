@@ -2,7 +2,10 @@
 # Copyright (c) 2007-2009 Roy Marples <roy@marples.name>
 # Released under the 2-clause BSD license.
 
-command=/usr/sbin/syslogd
+case "$RC_UNAME" in
+	Minix)			command=/usr/bin/syslogd;;
+	*)			command=/usr/sbin/syslogd;;
+esac
 command_args=$syslogd_args
 case "$RC_UNAME" in
 	FreeBSD|DragonFly)	pidfile=/var/run/syslog.pid;;

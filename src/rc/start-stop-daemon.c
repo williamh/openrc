@@ -298,6 +298,18 @@ parse_schedule(const char *string, int timeout)
 	return;
 }
 
+/*
+ * Minix uses the following negative PIDs
+ *
+ *  PID TTY  TIME CMD
+ * (-5)   ?  0:00 asyncm
+ * (-4)   ?  0:00 idle
+ * (-3)   ?  0:00 clock
+ * (-2)   ?  0:00 system
+ * (-1)   ?  0:00 kernel
+ *    1   ?  0:00 init
+ */
+#define UNKNOWN_PID -100
 static pid_t
 get_pid(const char *pidfile)
 {
@@ -305,17 +317,17 @@ get_pid(const char *pidfile)
 	pid_t pid;
 
 	if (! pidfile)
-		return -1;
+		return UNKNOWN_PID;
 
 	if ((fp = fopen(pidfile, "r")) == NULL) {
 		ewarnv("%s: fopen `%s': %s", applet, pidfile, strerror(errno));
-		return -1;
+		return UNKNOWN_PID;
 	}
 
 	if (fscanf(fp, "%d", &pid) != 1) {
 		ewarnv("%s: no pid found in `%s'", applet, pidfile);
 		fclose(fp);
-		return -1;
+		return UNKNOWN_PID;
 	}
 
 	fclose(fp);
@@ -403,7 +415,7 @@ run_stop_schedule(const char *exec, const char *const *argv,
 
 	if (pidfile) {
 		pid = get_pid(pidfile);
-		if (pid == -1)
+		if (pid == UNKNOWN_PID)
 			return 0;
 	}
 
@@ -1066,6 +1078,9 @@ start_stop_daemon(int argc, char **argv)
 	else
 		pid = 0;
 
+	if (pid == UNKNOWN_PID)
+		pid = 0;
+
 	if (do_stop(exec, (const char * const *)margv, pid, uid,
 		0, test) > 0)
 		eerrorx("%s: %s is already running", applet, exec);
@@ -1335,7 +1350,7 @@ start_stop_daemon(int argc, char **argv)
 		} else {
 			if (pidfile) {
 				pid = get_pid(pidfile);
-				if (pid == -1) {
+				if (pid == UNKNOWN_PID) {
 					eerrorx("%s: did not "
 					    "create a valid"
 					    " pid in `%s'",

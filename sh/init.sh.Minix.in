@@ -1,0 +1,24 @@
+#!@SHELL@
+# Copyright (c) 2014 Ralph Sennhauser <sera@gentoo.org>
+# Released under the 2-clause BSD license.
+
+. "$RC_LIBEXECDIR"/sh/functions.sh
+[ -r "@SYSCONFDIR@/rc.conf" ] && . "@SYSCONFDIR@/rc.conf"
+
+# or things get ugly
+service up /service/readclock.drv
+readclock -q || date 201301010000
+
+checkpath -d "$RC_SVCDIR"
+checkpath -d "$RC_LIBEXECDIR"/cache
+
+# need to clean out the old service state data
+# sera: maybe use an ramdisk instead
+rm -rf "$RC_SVCDIR"/*
+
+if [ -e "$RC_LIBEXECDIR"/cache/deptree ]; then
+	cp -p "$RC_LIBEXECDIR"/cache/* "$RC_SVCDIR" 2>/dev/null
+fi
+
+echo sysinit >"$RC_SVCDIR"/softlevel
+exit 0

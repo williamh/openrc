@@ -17,6 +17,9 @@ SRCS-Linux=	cgroup-release-agent.sh.in init-early.sh.in migrate-to-run.sh.in \
 BIN-Linux=	cgroup-release-agent.sh init-early.sh migrate-to-run.sh \
 	rc-cgroup.sh
 
+SRCS-Minix=
+BIN-Minix=
+
 SRCS-NetBSD=
 BIN-NetBSD=
 

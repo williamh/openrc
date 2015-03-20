@@ -1,8 +1,11 @@
 include ../mk/net.mk
 
 DIR=	${CONFDIR}
-CONF=	bootmisc fsck hostname localmount netmount urandom tmpfiles \
+CONF=	bootmisc fsck hostname localmount \
 		${CONF-${OS}}
+
+MK=	../mk
+include ${MK}/os.mk
 
 ifeq (${MKNET},yes)
 CONF+= network staticroute
@@ -10,14 +13,17 @@ TARGETS+=	network staticroute
 CLEANFILES+=	network staticroute
 endif
 
-MK=	../mk
-include ${MK}/os.mk
+CONF-extra=	netmount urandom tmpfiles
 
-CONF-FreeBSD=	ipfw moused powerd rarpd savecore syscons
+CONF-${OS}=	${CONF-extra}
 
-CONF-Linux=	consolefont devfs dmesg hwclock keymaps killprocs modules
+CONF-FreeBSD+=	ipfw moused powerd rarpd savecore syscons
 
-CONF-NetBSD=	moused rarpd savecore
+CONF-Linux+=	consolefont devfs dmesg hwclock keymaps killprocs modules
+
+CONF-Minix=
+
+CONF-NetBSD+=	moused rarpd savecore
 
 include ${MK}/scripts.mk
 
