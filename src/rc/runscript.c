@@ -1386,6 +1386,6 @@ openrc_run(int argc, char **argv)
 int
 runscript(int argc, char **argv)
 {
-	ewarnv("runscript is deprecated; please use openrc-run instead.");
+	ewarn("runscript is deprecated; please use openrc-run instead.");
 	return (openrc_run(argc, argv));
 }
