@@ -49,6 +49,7 @@ ssd_start()
 		--exec $command \
 		${chroot:+--chroot} $chroot \
 		${directory:+--chdir} $directory \
+		${input_file+--stdin} $input_file \
 		${output_log+--stdout} $output_log \
 		${error_log+--stderr} $error_log \
 		${output_logger_arg} \

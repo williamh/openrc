@@ -160,6 +160,15 @@ use this to change the user id, and optionally group id,  before
 or
 .Xr supervise-daemon 8
 launches the daemon.
+.It Ar input_file
+This is the path to a file or named pipe which will be used as the standard
+input for the service. If you are starting this service with
+.Xr start-stop-daemon 8 ,
+,  you must set
+.Pa command_background
+to true. Keep in mind that this path will be inside the chroot if the
+.Pa chroot
+variable is set.
 .It Ar output_log
 This is the path to a file or named pipe where the standard output from
 the service will be redirected. If you are starting this service with

@@ -68,7 +68,7 @@ static struct pam_conv conv = { NULL, NULL};
 
 const char *applet = NULL;
 const char *extraopts = NULL;
-const char *getoptstring = "A:a:D:d:e:g:H:I:Kk:m:N:p:R:r:s:Su:1:2:3" \
+const char *getoptstring = "A:a:D:d:e:g:H:I:Kk:m:N:p:R:r:s:Su:0:1:2:3" \
 	getoptstring_COMMON;
 const struct option longopts[] = {
 	{ "healthcheck-timer",        1, NULL, 'a'},
@@ -89,6 +89,7 @@ const struct option longopts[] = {
 	{ "signal",       1, NULL, 's'},
 	{ "start",        0, NULL, 'S'},
 	{ "user",         1, NULL, 'u'},
+	{ "stdin",        1, NULL, '0'},
 	{ "stdout",       1, NULL, '1'},
 	{ "stderr",       1, NULL, '2'},
 	{ "reexec",       0, NULL, '3'},
@@ -113,6 +114,7 @@ const char * const longopts_help[] = {
 	"Send a signal to the daemon",
 	"Start daemon",
 	"Change the process user",
+	"Redirect stdin from file",
 	"Redirect stdout to file",
 	"Redirect stderr to file",
 	"reexec (used internally)",
@@ -134,8 +136,9 @@ static int devnull_fd = -1;
 static int stdin_fd;
 static int stdout_fd;
 static int stderr_fd;
-static char *redirect_stderr = NULL;
+static char *redirect_stdin = NULL;
 static char *redirect_stdout = NULL;
+static char *redirect_stderr = NULL;
 #ifdef TIOCNOTTY
 static int tty_fd = -1;
 #endif
@@ -462,6 +465,11 @@ static void child_process(char *exec, char **argv)
 	stdin_fd = devnull_fd;
 	stdout_fd = devnull_fd;
 	stderr_fd = devnull_fd;
+	if (redirect_stdin) {
+		if ((stdin_fd = open(redirect_stdin, O_RDONLY)) == -1)
+			eerrorx("%s: unable to open input file `%s': %s",
+				    applet, redirect_stdin, strerror(errno));
+	}
 	if (redirect_stdout) {
 		if ((stdout_fd = open(redirect_stdout,
 			    O_WRONLY | O_CREAT | O_APPEND,
@@ -889,6 +897,10 @@ int main(int argc, char **argv)
 			}
 		}
 		break;
+
+		case '0':   /* --stdin /path/to/stdin.file */
+			redirect_stdin = optarg;
+			break;
 
 		case '1':   /* --stdout /path/to/stdout.lgfile */
 			redirect_stdout = optarg;

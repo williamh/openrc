@@ -66,7 +66,7 @@ static struct pam_conv conv = { NULL, NULL};
 
 const char *applet = NULL;
 const char *extraopts = NULL;
-const char *getoptstring = "I:KN:PR:Sa:bc:d:e:g:ik:mn:op:s:tu:r:w:x:1:2:3:4:" \
+const char *getoptstring = "I:KN:PR:Sa:bc:d:e:g:ik:mn:op:s:tu:r:w:x:0:1:2:3:4:" \
 	getoptstring_COMMON;
 const struct option longopts[] = {
 	{ "ionice",       1, NULL, 'I'},
@@ -92,6 +92,7 @@ const struct option longopts[] = {
 	{ "chroot",       1, NULL, 'r'},
 	{ "wait",         1, NULL, 'w'},
 	{ "exec",         1, NULL, 'x'},
+	{ "stdin",        1, NULL, '0'},
 	{ "stdout",       1, NULL, '1'},
 	{ "stderr",       1, NULL, '2'},
 	{ "stdout-logger",1, NULL, '3'},
@@ -123,6 +124,7 @@ const char * const longopts_help[] = {
 	"Chroot to this directory",
 	"Milliseconds to wait for daemon start",
 	"Binary to start/stop",
+	"redirect stdin from file",
 	"Redirect stdout to file",
 	"Redirect stderr to file",
 	"Redirect stdout to process",
@@ -279,10 +281,11 @@ int main(int argc, char **argv)
 	gid_t gid = 0;
 	char *home = NULL;
 	int tid = 0;
-	char *redirect_stderr = NULL;
+	char *redirect_stdin = NULL;
 	char *redirect_stdout = NULL;
-	char *stderr_process = NULL;
+	char *redirect_stderr = NULL;
 	char *stdout_process = NULL;
+	char *stderr_process = NULL;
 	int stdin_fd;
 	int stdout_fd;
 	int stderr_fd;
@@ -498,6 +501,10 @@ int main(int argc, char **argv)
 			break;
 		case 'x':  /* --exec <executable> */
 			exec = optarg;
+			break;
+
+		case '0':   /* --stdin /path/to/stdin.file */
+			redirect_stdin = optarg;
 			break;
 
 		case '1':   /* --stdout /path/to/stdout.lgfile */
@@ -906,6 +913,11 @@ int main(int argc, char **argv)
 		stdin_fd = devnull_fd;
 		stdout_fd = devnull_fd;
 		stderr_fd = devnull_fd;
+		if (redirect_stdin) {
+			if ((stdin_fd = open(redirect_stdin, O_RDONLY)) != -1)
+				eerrorx("%s: unable to open the input file `%s': %s",
+				    applet, redirect_stdin, strerror(errno));
+		}
 		if (redirect_stdout) {
 			if ((stdout_fd = open(redirect_stdout,
 				    O_WRONLY | O_CREAT | O_APPEND,
